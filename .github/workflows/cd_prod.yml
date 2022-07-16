@@ -1,4 +1,4 @@
-name: CD - Dev
+name: CD - Prod
 
 on:
   push:
