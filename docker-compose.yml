@@ -123,15 +123,15 @@ services:
       REACT_APP_API_BASE_URL: ${UI_API_BASE_URL}
   
   # Datadog
-  #datadog:
-  #  image: datadog/agent
-  #  container_name: datadog
-  #  environment:
-  #    - DD_API_KEY=${DATADOG_API_KEY}
-  #    - DD_SITE=datadoghq.com
-  #    - DD_LOGS_ENABLED=true
-  #    - DD_APM_ENABLED=true
-  #  volumes:
-  #    - /var/run/docker.sock:/var/run/docker.sock
-  #    - /proc/:/host/proc/:ro
-  #    - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+  datadog:
+    image: datadog/agent
+    container_name: datadog
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_APM_ENABLED=true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
