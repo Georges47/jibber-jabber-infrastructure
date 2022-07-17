@@ -3,11 +3,9 @@ version: "3.9"
 services:
   # Nginx
   nginx:
+    image: nginx
     container_name: nginx
     restart: unless-stopped
-    build: 
-      context: nginx
-      dockerfile: Dockerfile
     ports:
       - 80:80
       - 443:443
@@ -113,6 +111,8 @@ services:
       POSTGRES_HOST: posts_db
       POSTGRES_USER: ${FOLLOWERS_DB_USER}
       POSTGRES_PASSWORD: ${FOLLOWERS_DB_PASSWORD}
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "ruby", "service": "followers"}]'  
       
   # UI
   ui:
