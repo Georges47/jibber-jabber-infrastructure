@@ -1,0 +1,69 @@
+name: CD
+
+on:
+  push:
+    branches: [ dev, main ]
+
+jobs:
+  cd:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/dev.key
+          chmod 600 ~/.ssh/dev.key
+          cat >>~/.ssh/config <<END
+          Host dev
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/dev.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ github.ref_name == 'main' && secrets.SSH_PROD_USER || secrets.SSH_DEV_USER }}
+          SSH_KEY: ${{ github.ref_name == 'main' && secrets.SSH_PROD_PRIVATE_KEY || secrets.SSH_DEV_PRIVATE_KEY }}
+          SSH_HOST: ${{ github.ref_name == 'main' && secrets.SSH_PROD_HOST || secrets.SSH_DEV_HOST }}
+
+      - name: Stop the server
+        run: ssh dev 'docker-compose stop'
+        
+      - name: Copy docker-compose.yml via ssh key
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ github.ref_name == 'main' && secrets.SSH_PROD_HOST || secrets.SSH_DEV_HOST }}
+          username: ${{ github.ref_name == 'main' && secrets.SSH_PROD_USER || secrets.SSH_DEV_USER }}
+          port: 22
+          key: ${{ github.ref_name == 'main' && secrets.SSH_PROD_PRIVATE_KEY || secrets.SSH_DEV_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "~"
+      
+      - name: Copy nginx config via ssh key
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ github.ref_name == 'main' && secrets.SSH_PROD_HOST || secrets.SSH_DEV_HOST }}
+          username: ${{ github.ref_name == 'main' && secrets.SSH_PROD_USER || secrets.SSH_DEV_USER }}
+          port: 22
+          key: ${{ github.ref_name == 'main' && secrets.SSH_PROD_PRIVATE_KEY || secrets.SSH_DEV_PRIVATE_KEY }}
+          source: "nginx/default.conf"
+          target: "~/nginx/"
+          
+      - name: Copy keycloak config via ssh key
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ github.ref_name == 'main' && secrets.SSH_PROD_HOST || secrets.SSH_DEV_HOST }}
+          username: ${{ github.ref_name == 'main' && secrets.SSH_PROD_USER || secrets.SSH_DEV_USER }}
+          port: 22
+          key: ${{ github.ref_name == 'main' && secrets.SSH_PROD_PRIVATE_KEY || secrets.SSH_DEV_PRIVATE_KEY }}
+          source: "keycloak/register.ftl,keycloak/theme.properties"
+          target: "~/keycloak/"
+
+      - name: Start the server
+        if: ${{ always() }}
+        run: ssh dev 'docker-compose up -d > /dev/null 2>&1'
+
